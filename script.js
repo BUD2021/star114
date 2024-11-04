@@ -20,6 +20,9 @@ $(document).ready(function() {
                     <td>${item.校名}</td>
                     <td>${item.校系}</td>
                     <td>${item.校系代碼}</td>
+					<td>${item.學群類別}</td>
+                    <td>${item.招生名額}</td>
+                    <td>${item.可填志願數}</td>
                     <td>${item.國文}</td>
                     <td>${item.英文}</td>
                     <td>${item.數學A}</td>
