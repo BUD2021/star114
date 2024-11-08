@@ -1,5 +1,12 @@
 $(document).ready(function() {
     let universityData = [];
+    let starData = [];
+
+    $.getJSON('starData.json', function(data) {
+        starData = data['Data'];
+    }).fail(function() {
+        alert('無法讀取 starData.json，請確認檔案是否正確。');
+    });
 
     // 讀取 JSON 檔案
     $.getJSON('UniversityData.json', function(data) {
@@ -9,12 +16,18 @@ $(document).ready(function() {
         alert('無法讀取資料，請確認 JSON 檔案是否正確。');
     });
 
+
     // 渲染表格的函數
     function renderTable(data) {
         const tableBody = $('#word-table-body');
         tableBody.empty(); // 清空現有資料
 
         data.forEach(item => {
+
+            const starItem = starData.find(star => star['校系代碼'] === item['校系代碼']);
+            const 第一輪 = starItem ? starItem['第一輪%'] : 'ND';   
+            const 第二輪 = starItem ? starItem['第二輪%'] : 'ND';  
+
             const row = `
                 <tr>
                     <td>${item.校名}</td>
@@ -29,6 +42,8 @@ $(document).ready(function() {
                     <td>${item.數學B}</td>
                     <td>${item.自然}</td>
                     <td>${item.社會}</td>
+                    <td>${第一輪}</td>
+                    <td>${第二輪}</td>
                 </tr>
             `;
             tableBody.append(row);
