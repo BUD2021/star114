@@ -48,14 +48,16 @@ $(document).ready(function() {
         return "不及格";
     }
 
-    // 檢查是否符合校系要求
-    function meetsCriteria(userGrades, dept, allEmpty) {
+    // 檢查是否符合校系要求（成績、學群、學校類型）
+    function meetsCriteria(userGrades, dept, allEmpty, selectedCategories, selectedTypes) {
         const levels = ["頂標", "前標", "均標", "後標", "底標"];
 
-        // 如果表單全空，返回所有校系
-        if (allEmpty) return true;
+        // 如果表單全空，返回所有校系（不過濾成績）
+        if (allEmpty) {
+            return meetsCategoryAndType(dept, selectedCategories, selectedTypes);
+        }
 
-        // 檢查每科是否符合要求
+        // 檢查成績條件
         const chineseCheck = userGrades.chinese === "不及格" ? dept["國文"] === "--" : (dept["國文"] === "--" || levels.indexOf(userGrades.chinese) <= levels.indexOf(dept["國文"]));
         const englishCheck = userGrades.english === "不及格" ? dept["英文"] === "--" : (dept["英文"] === "--" || levels.indexOf(userGrades.english) <= levels.indexOf(dept["英文"]));
         const mathACheck = userGrades.mathA === "不及格" ? dept["數學A"] === "--" : (dept["數學A"] === "--" || levels.indexOf(userGrades.mathA) <= levels.indexOf(dept["數學A"]));
@@ -63,7 +65,18 @@ $(document).ready(function() {
         const scienceCheck = userGrades.science === "不及格" ? dept["自然"] === "--" : (dept["自然"] === "--" || levels.indexOf(userGrades.science) <= levels.indexOf(dept["自然"]));
         const socialCheck = userGrades.social === "不及格" ? dept["社會"] === "--" : (dept["社會"] === "--" || levels.indexOf(userGrades.social) <= levels.indexOf(dept["社會"]));
 
-        return chineseCheck && englishCheck && mathACheck && mathBCheck && scienceCheck && socialCheck;
+        return chineseCheck && englishCheck && mathACheck && mathBCheck && scienceCheck && socialCheck && meetsCategoryAndType(dept, selectedCategories, selectedTypes);
+    }
+
+    // 檢查學群和學校類型是否符合
+    function meetsCategoryAndType(dept, selectedCategories, selectedTypes) {
+        const categoryMatch = selectedCategories.length === 0 || selectedCategories.includes(dept["學群類別"]);
+        const isNational = dept["校名"].includes("國立") || dept["校名"].includes("市立");
+        const typeMatch = selectedTypes.length === 0 || 
+                          (selectedTypes.includes("national") && isNational) || 
+                          (selectedTypes.includes("private") && !isNational);
+
+        return categoryMatch && typeMatch;
     }
 
     // 渲染表格的函數
@@ -109,7 +122,7 @@ $(document).ready(function() {
                 英文: ${userGrades.english} (${$('#grade-english').val() || 0})⠀
                 數A: ${userGrades.mathA} (${$('#grade-math-a').val() || 0})⠀
                 數B: ${userGrades.mathB} (${$('#grade-math-b').val() || 0})⠀
-                自然: ${userGrades.science} (${$('#grade-science').val() || 0})
+                自然: ${userGrades.science} (${$('#grade-science').val() || 0})⠀
                 社會: ${userGrades.social} (${$('#grade-social').val() || 0})
             </div>
         `;
@@ -127,6 +140,17 @@ $(document).ready(function() {
         renderTable(filteredData);
     });
 
+    // 新增全選勾選框事件
+$('#select-all-categories').on('change', function() {
+    const isChecked = $(this).is(':checked');
+    $('input[id^="category-"]').prop('checked', isChecked);
+});
+
+$('#select-all-types').on('change', function() {
+    const isChecked = $(this).is(':checked');
+    $('input[id^="type-"]').prop('checked', isChecked);
+});
+
     // 成績篩選功能
     $('#grade-form').on('submit', function(event) {
         event.preventDefault();
@@ -138,7 +162,6 @@ $(document).ready(function() {
         const scienceInput = $('#grade-science').val();
         const socialInput = $('#grade-social').val();
 
-        // 檢查是否所有欄位都為空
         const allEmpty = !chineseInput && !englishInput && !mathAInput && !mathBInput && !scienceInput && !socialInput;
 
         const userGrades = {
@@ -150,10 +173,23 @@ $(document).ready(function() {
             social: getGradeLevel(parseInt(socialInput) || 0, 'social')
         };
 
+        // 獲取選中的學群
+        const selectedCategories = [];
+        $('input[id^="category-"]:checked').each(function() {
+            selectedCategories.push($(this).val());
+        });
+
+        // 獲取選中的學校類型
+        const selectedTypes = [];
+        $('input[id^="type-"]:checked').each(function() {
+            selectedTypes.push($(this).val());
+        });
+
         showGradeValidation(userGrades);
 
-        // 如果表單全空，顯示所有校系；否則按條件篩選
-        const filteredData = allEmpty ? universityData : universityData.filter(dept => meetsCriteria(userGrades, dept, allEmpty));
+        const filteredData = (allEmpty && selectedCategories.length === 0 && selectedTypes.length === 0) 
+            ? universityData 
+            : universityData.filter(dept => meetsCriteria(userGrades, dept, allEmpty, selectedCategories, selectedTypes));
         renderTable(filteredData);
     });
 
